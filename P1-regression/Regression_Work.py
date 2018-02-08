@@ -65,60 +65,61 @@ test_smiles = test_x['smiles']
 df_train = df_train.drop(['smiles'], axis=1)
 df_test = df_test.drop(['smiles'], axis=1)
 
-x_train, x_test, y_train, y_test = train_test_split(df_train, Y_train, test_size = .33)
+
+
+# x_train, x_test, y_train, y_test = train_test_split(df_train, Y_train, test_size = .33)
 
 ###
 ### Testing only on train to find best fit
 ###
 
-# Lasso Regression
-Lasso = LassoCV()
-Lasso.fit(x_train, y_train)
-Lasso_pred = Lasso.predict(x_test)
-Lasso_error = mean_squared_error(y_test, Lasso_pred)
-
-# Ridge Regression
-Ridge = RidgeCV()
-Ridge.fit(x_train, y_train)
-Ridge_pred = Ridge.predict(x_test)
-Ridge_error = mean_squared_error(y_test, Ridge_pred)
-
-# ElasticNet regression
-l1_rtio = Lasso_error / (Lasso_error + Ridge_error)
-EN = ElasticNetCV(l1_ratio = [l1_rtio, .1, .9, .95, .99, 1])
-EN.fit(x_train, y_train)
-EN_pred = EN.predict(x_test)
-EN_error = mean_squared_error(y_test, EN_pred)
-
-# AdaBoost regression
-Ada = AdaBoostRegressor(DecisionTreeRegressor(), learning_rate=0.05)
-params = {'base_estimator__max_depth':list(range(1,6))}
-ada_cv = GridSearchCV(Ada, params, cv = 5)
-ada_cv.fit(x_train, y_train)
-ada_pred = ada_cv.predict(x_test)
-
-AB_error = mean_squared_error(y_test, ada_pred)
-
-# Linear Regression
-LR = LinearRegression()
-LR.fit(x_train, y_train)
-LR_pred = LR.predict(x_test)
-
-LR_error = mean_squared_error(y_test, LR_pred)
-
+# # Lasso Regression
+# Lasso = LassoCV()
+# Lasso.fit(x_train, y_train)
+# Lasso_pred = Lasso.predict(x_test)
+# Lasso_error = mean_squared_error(y_test, Lasso_pred)
+#
+# # Ridge Regression
+# Ridge = RidgeCV()
+# Ridge.fit(x_train, y_train)
+# Ridge_pred = Ridge.predict(x_test)
+# Ridge_error = mean_squared_error(y_test, Ridge_pred)
+#
+# # ElasticNet regression
+# l1_rtio = Lasso_error / (Lasso_error + Ridge_error)
+# EN = ElasticNetCV(l1_ratio = [l1_rtio, .1, .9, .95, .99, 1])
+# EN.fit(x_train, y_train)
+# EN_pred = EN.predict(x_test)
+# EN_error = mean_squared_error(y_test, EN_pred)
+#
+# # AdaBoost regression
+# Ada = AdaBoostRegressor(DecisionTreeRegressor(), learning_rate=0.05)
+# params = {'base_estimator__max_depth':list(range(1,6))}
+# ada_cv = GridSearchCV(Ada, params, cv = 5)
+# ada_cv.fit(x_train, y_train)
+# ada_pred = ada_cv.predict(x_test)
+#
+# AB_error = mean_squared_error(y_test, ada_pred)
+#
+# # Linear Regression
+# LR = LinearRegression()
+# LR.fit(x_train, y_train)
+# LR_pred = LR.predict(x_test)
+#
+# LR_error = mean_squared_error(y_test, LR_pred)
 
 ###
 ### Regressing all data to predict test
 ###
 
-# Ada = AdaBoostRegressor(DecisionTreeRegressor(), learning_rate=0.05)
-# params = {'base_estimator__max_depth':list(range(1,6))}
-# ada_cv = GridSearchCV(Ada, params, cv = 5)
-# ada_cv.fit(df_train, Y_train)
-# Ada_final_pred = ada_cv.predict(df_test)
-#
-# def write_to_file(filename, predictions):
-#     with open(filename, "w") as f:
-#         f.write("Id,Prediction\n")
-#         for i,p in enumerate(predictions):
-#             f.write(str(i+1) + "," + str(p) + "\n")
+Ada = AdaBoostRegressor(DecisionTreeRegressor(), learning_rate=0.05)
+params = {'base_estimator__max_depth':list(range(1,6))}
+ada_cv = GridSearchCV(Ada, params, cv = 5)
+ada_cv.fit(df_train, Y_train)
+Ada_final_pred = ada_cv.predict(df_test)
+
+def write_to_file(filename, predictions):
+    with open(filename, "w") as f:
+        f.write("Id,Prediction\n")
+        for i,p in enumerate(predictions):
+            f.write(str(i+1) + "," + str(p) + "\n")
