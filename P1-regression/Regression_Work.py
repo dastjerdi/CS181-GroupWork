@@ -123,3 +123,5 @@ def write_to_file(filename, predictions):
         f.write("Id,Prediction\n")
         for i,p in enumerate(predictions):
             f.write(str(i+1) + "," + str(p) + "\n")
+
+write_to_file("AdaBoostRegressor.csv", Ada_final_pred)
