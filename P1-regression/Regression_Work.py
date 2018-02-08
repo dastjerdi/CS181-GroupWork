@@ -59,8 +59,8 @@ df_test['NumAtms'] = NA_test
 df_test['HvyAtms'] = GNHA_test
 df_test['NumBnds'] = NB_test
 
-train_smiles = train_x['smiles']
-test_smiles = test_x['smiles']
+train_smiles = df_train['smiles']
+test_smiles = df_train['smiles']
 
 df_train = df_train.drop(['smiles'], axis=1)
 df_test = df_test.drop(['smiles'], axis=1)
