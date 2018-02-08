@@ -1,22 +1,8 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import math
 from rdkit import Chem
 from rdkit.Chem import AllChem
-import sklearn
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import RidgeCV
-from sklearn.linear_model import LassoCV
-from sklearn.linear_model import ElasticNetCV
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import mean_squared_error
-from sklearn.ensemble import AdaBoostRegressor
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.decomposition import PCA
 import concurrent.futures
 import csv
 
