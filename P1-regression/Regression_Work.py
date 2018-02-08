@@ -65,7 +65,7 @@ test_smiles = df_train['smiles']
 df_train = df_train.drop(['smiles'], axis=1)
 df_test = df_test.drop(['smiles'], axis=1)
 
-
+print("features created")
 
 # x_train, x_test, y_train, y_test = train_test_split(df_train, Y_train, test_size = .33)
 
@@ -117,6 +117,8 @@ params = {'base_estimator__max_depth':list(range(1,6))}
 ada_cv = GridSearchCV(Ada, params, cv = 5)
 ada_cv.fit(df_train, Y_train)
 Ada_final_pred = ada_cv.predict(df_test)
+
+print("Regression Completed!")
 
 def write_to_file(filename, predictions):
     with open(filename, "w") as f:
