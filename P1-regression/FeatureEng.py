@@ -7,6 +7,7 @@ import csv
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.decomposition import PCA
+import time
 
 
 """
@@ -27,17 +28,20 @@ def getBin(smile):
     return list(map(int, fprint.ToBitString()))
 
 with concurrent.futures.ProcessPoolExecutor() as executor:
-    Bits_test = executor.map(getBin, df_test['smiles'], chunksize=100)
-    Bits_train = executor.map(getBin, df_train['smiles'], chunksize=100)
+    Bits_test = executor.map(getBin, df_test['smiles'], chunksize=500)
+    Bits_train = executor.map(getBin, df_train['smiles'], chunksize=500)
 
 
 Y_train = df_train.gap.values
+start = time.time()
 X_train = pd.DataFrame(Bits_train)
-X_test = pd.DataFrame(Bits_test)
+X_test= pd.DataFrame(Bits_test)
+end = time.time()
+print(end-start)
 
 print("Begin PCA")
-pca = PCA(n_components = 50)
-pca.fit(X_train, Y_train[1:100])
+pca = PCA(n_components = 10)
+pca.fit(X_train, Y_train)
 
 X_PCA = pca.transform(X_train)
 
@@ -45,7 +49,7 @@ X_PCA_Test = pca.transform(X_test)
 
 print("begin RF CV")
 forest = RandomForestRegressor()
-parameter = {'max_depth':[3,5,7], 'n_estimators':1024, }
+parameter = {'max_depth':[3,5,7], 'n_estimators':[1024] }
 forest_cv = GridSearchCV(forest, parameter, cv = 3)
 forest_cv.fit(X_PCA, Y_train)
 
