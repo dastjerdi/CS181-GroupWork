@@ -40,7 +40,7 @@ end = time.time()
 print(end-start)
 
 print("Begin PCA")
-pca = PCA(n_components = 10)
+pca = PCA(n_components = 50)
 pca.fit(X_train, Y_train)
 
 X_PCA = pca.transform(X_train)
