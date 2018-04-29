@@ -20,7 +20,7 @@ class Learner(object):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
-    
+
     def state_RL(self):
         state = self.last_state
         top_dist = state['tree']['top'] - state['monkey']['top']
@@ -125,3 +125,5 @@ if __name__ == '__main__':
 
 	# Save history.
 	np.save('hist',np.array(hist))
+
+# Ali is Dumb
