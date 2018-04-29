@@ -209,7 +209,6 @@ class SwingyMonkey:
         # Fail on hitting top or bottom.
         if monkey_bot > self.screen_height or monkey_top < 0:
             edge_hit = True
-            print "fail", monkey_bot, monkey_top
 
         # Render the score
         score_text = self.font.render("Score: %d" % (self.score), 1, (230, 40, 40))

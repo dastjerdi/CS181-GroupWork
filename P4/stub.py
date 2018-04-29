@@ -44,7 +44,7 @@ class Learner(object):
         last_reward = 0
         state = self.last_state
 
-        if state['monkey']['top'] < 0 or state['monkey']['bot'] > 400:
+        if state['monkey']['bot'] + state['monkey']['vel'] < 0 or state['monkey']['top'] + state['monkey']['vel'] > 400:
             last_reward = -10
 
         elif state['tree']['dist'] == 0:
@@ -53,8 +53,6 @@ class Learner(object):
             else:
                 last_reward = 1
 
-        # if state['monkey']['bot'] > 400:
-        print "FAIL***"
         self.last_reward = reward
 
 
