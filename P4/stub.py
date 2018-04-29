@@ -2,8 +2,13 @@
 import numpy as np
 import numpy.random as npr
 import pygame as pg
+from keras.models import Sequential
+from keras.layers.core import Flatten, Dense, Dropout
+from keras.layers.convolutional import Conv2D, MaxPooling2D, ZeroPadding2D
 
 from SwingyMonkey import SwingyMonkey
+
+
 
 
 class Learner(object):
@@ -15,14 +20,19 @@ class Learner(object):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
+        model = Sequential()
+        model.add(InputLayer(batch_input_shape=(1, 4)))
+        model.add(Dense(10, activation='sigmoid'))
+        model.add(Dense(2, activation='linear'))
+        model.compile(loss='mse', optimizer='adam', metrics=['mae'])
+   
 
     def reset(self):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
     
-    def state_RL(self):
-        state = self.last_state
+    def state_RL(self, state):
         top_dist = state['tree']['top'] - state['monkey']['top']
         bot_dist = state['tree']['bot'] - state['monkey']['bot']
         return (top_dist, bot_dist, state['tree']['dist'], state['monkey']['vel'])
@@ -52,6 +62,8 @@ def eps_greedy_q_learning_with_table(env, num_episodes=500):
 
 
 
+
+
     def action_callback(self, state):
         '''
         Implement this function to learn things and take actions.
@@ -63,10 +75,16 @@ def eps_greedy_q_learning_with_table(env, num_episodes=500):
         # You'll need to select and action and return it.
         # Return 0 to swing and 1 to jump.
 
+        RL_ state = state_RL(state)
+        
+
         new_action = npr.rand() < 0.1
-        new_state  = state
+
+        a = np.argmax(model.predict(self.state_RL))
+
 
         self.last_action = new_action
+        new_state  = state
         self.last_state  = new_state
 
         return self.last_action
@@ -91,6 +109,7 @@ def run_games(learner, hist, iters = 100, t_len = 100):
     '''
     Driver function to simulate learning by having the agent play a sequence of games.
     '''
+
     for ii in range(iters):
         # Make a new monkey object.
         swing = SwingyMonkey(sound=False,                  # Don't play sounds.
