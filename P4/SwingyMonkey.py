@@ -5,7 +5,7 @@ import numpy.random as npr
 
 class SwingyMonkey:
 
-    def __init__(self, sound=True, text=None, action_callback=None, 
+    def __init__(self, sound=True, text=None, action_callback=None,
                  reward_callback=None, tick_length=100):
         """Constructor for the SwingyMonkey class.
 
@@ -74,7 +74,7 @@ class SwingyMonkey:
         # Track locations of trees and gaps.
         self.trees     = []
         self.next_tree = 0
-        
+
         # Precompute some things about the monkey.
         self.monkey_left  = self.screen_width/2 - self.monkey_img.get_width()/2
         self.monkey_right = self.monkey_left + self.monkey_img.get_width()
@@ -96,7 +96,7 @@ class SwingyMonkey:
                     'bot':  <screen height of bottom of tree trunk gap> },
           'monkey': { 'vel': <current monkey y-axis speed in pixels per iteration>,
                       'top': <screen height of top of monkey>,
-                      'bot': <screen height of bottom of monkey> }}'''                      
+                      'bot': <screen height of bottom of monkey> }}'''
 
         # Find the next closest tree.
         next_tree = None
@@ -177,7 +177,7 @@ class SwingyMonkey:
                 self.screen.blit(self.background_img, (tree['x'], tree['y']),
                                  (tree['x']-(self.iter+self.background_img.get_width()), tree['y'],
                                   self.tree_img.get_width(), self.tree_gap))
-                
+
             trunk_left  = tree['x']
             trunk_right = tree['x'] + self.tree_img.get_width()
             trunk_top   = tree['y']
@@ -190,7 +190,7 @@ class SwingyMonkey:
                 #pg.draw.rect(self.screen, (255,0,0), (self.monkey_left+15, monkey_top, self.monkey_img.get_width()-15, monkey_bot-monkey_top), 1)
                 if (monkey_top < trunk_top) or (monkey_bot > trunk_bot):
                     tree_hit = True
-            
+
             # Keep score.
             if not tree['s'] and (self.monkey_left+15) > trunk_right:
                 tree['s'] = True
@@ -209,6 +209,7 @@ class SwingyMonkey:
         # Fail on hitting top or bottom.
         if monkey_bot > self.screen_height or monkey_top < 0:
             edge_hit = True
+            print "fail", monkey_bot, monkey_top
 
         # Render the score
         score_text = self.font.render("Score: %d" % (self.score), 1, (230, 40, 40))
@@ -248,8 +249,8 @@ class SwingyMonkey:
             if pass_tree:
                 self.reward_fn(self.tree_reward)
             else:
-                self.reward_fn(0.0)            
-        
+                self.reward_fn(0.0)
+
         # Wait just a bit.
         pg.time.delay(self.tick_length)
 
@@ -262,11 +263,10 @@ class SwingyMonkey:
         return True
 
 if __name__ == '__main__':
-    
+
     # Create the game object.
     game = SwingyMonkey()
 
     # Loop until you hit something.
     while game.game_loop():
         pass
-

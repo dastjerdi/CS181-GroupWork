@@ -41,8 +41,20 @@ class Learner(object):
         return self.last_action
 
     def reward_callback(self, reward):
-        '''This gets called so you can see what reward you get.'''
+        last_reward = 0
+        state = self.last_state
 
+        if state['monkey']['top'] < 0 or state['monkey']['bot'] > 400:
+            last_reward = -10
+
+        elif state['tree']['dist'] == 0:
+            if state['monkey']['top'] >= state['tree']['top'] or state['monkey']['bot'] >= state['tree']['bot']:
+                last_reward = -5
+            else:
+                last_reward = 1
+
+        # if state['monkey']['bot'] > 400:
+        print "FAIL***"
         self.last_reward = reward
 
 
@@ -61,7 +73,7 @@ def run_games(learner, hist, iters = 100, t_len = 100):
         # Loop until you hit something.
         while swing.game_loop():
             pass
-        
+
         # Save score history.
         hist.append(swing.score)
 
@@ -79,10 +91,8 @@ if __name__ == '__main__':
 	# Empty list to save history.
 	hist = []
 
-	# Run games. 
+	# Run games.
 	run_games(agent, hist, 20, 10)
 
-	# Save history. 
+	# Save history.
 	np.save('hist',np.array(hist))
-
-
