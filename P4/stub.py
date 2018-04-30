@@ -31,9 +31,9 @@ class Learner(object):
         self.posReward = False
         self.lastPos = 0
         self.model = Sequential()
-        self.model.add(Dense(16, input_dim=7, kernel_initializer='normal', activation='relu'))
-        # self.model.add(Dense(10, activation='relu'))
-        self.model.add(Dense(2, activation='sigmoid'))
+        self.model.add(Dense(256, input_dim=7, activation='relu'))
+        self.model.add(Dense(256, activation='relu'))
+        self.model.add(Dense(2, activation='linear'))
         adam = Adam(lr=1e-6)
         self.model.compile(loss='mse', optimizer = adam, metrics=['mae'])
 
@@ -84,7 +84,7 @@ class Learner(object):
 
         if self.game < 300:
             jump = .1
-            a = int(np.random.rand() < .2)
+            a = int(np.random.rand() < jump)
         else:
             epsilon = self.epsilon/(1+count*.0000001)
             self.epsilon = max(epsilon, .01)
@@ -176,6 +176,7 @@ def run_games(learner, hist, iters = 100, t_len = 100):
     '''
 
     for ii in range(iters):
+        print(ii)
         # Make a new monkey object.
         swing = SwingyMonkey(sound=False,                  # Don't play sounds.
                              text="Epoch %d" % (ii),       # Display the epoch on screen.
@@ -189,6 +190,7 @@ def run_games(learner, hist, iters = 100, t_len = 100):
 
         # Save score history.
         hist.append(swing.score)
+        print(swing.score)
 
         # Long term learning
         learner.long_learn()
@@ -208,7 +210,7 @@ if __name__ == '__main__':
 	hist = []
 
 	# Run games.
-	run_games(agent, hist, 5000, 1)
+	run_games(agent, hist, 2500, 1)
 
 	# Save history.
 np.save('hist',np.array(hist))
