@@ -22,12 +22,12 @@ class Learner(object):
         self.two_ago = None
         self.last_action = None
         self.last_reward = None
-        self.epsilon = .3
+        self.epsilon = .5
         self.sarsa = []
         self.counter = 0
         self.gravity = 0
         self.model = Sequential()
-        self.model.add(Dense(8, input_dim=5, kernel_initializer='normal', activation='relu'))
+        self.model.add(Dense(16, input_dim=7, kernel_initializer='normal', activation='relu'))
         # self.model.add(Dense(10, activation='relu'))
         self.model.add(Dense(2, activation='sigmoid'))
         self.model.compile(loss='mse', optimizer='adam', metrics=['mae'])
@@ -37,13 +37,16 @@ class Learner(object):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
-        if len(self.sarsa) > 500:
-            self.sarsa = self.sarsa[-500:]
+        a,b,c,d,_ = self.sarsa[-1]
+        self.sarsa[-1] = (a,b,c,d,1)
+        if len(self.sarsa) > 5000:
+            self.sarsa = self.sarsa[-5000:]
 
     def state_RL(self, state):
         top_dist = state['tree']['top'] - state['monkey']['top']
         bot_dist = state['tree']['bot'] - state['monkey']['bot']
-        new_state = np.array([[top_dist], [bot_dist], [state['tree']['dist']], [state['monkey']['vel']], [self.gravity]])
+
+        new_state = np.array([[state['monkey']['top']], [state['monkey']['bot']], [top_dist], [bot_dist], [state['tree']['dist']], [state['monkey']['vel']], [self.gravity]])
 
         return new_state
 
@@ -65,15 +68,12 @@ class Learner(object):
         model = self.model
         count = self.counter
 
-        epsilon = self.epsilon/(1+count*.0001)
-        self.epsilon = epsilon
-        if epsilon > 0:
-            print self.epsilon
+        epsilon = self.epsilon/(1+count*.000005)
+        self.epsilon = max(epsilon, .01)
+        print(self.epsilon)
 
         if np.random.rand() < epsilon:
-            # self.randomCount += 1
             a = np.random.randint(0,2)
-            # print self.epsilon, self.randomCount
         else:
             a = np.argmax(model.predict(new_state.T))
 
@@ -98,7 +98,7 @@ class Learner(object):
             last_reward = -10
 
         elif state['tree']['dist'] <= 270 and state['tree']['dist'] >= 150:
-            if state['monkey']['top'] >= state['tree']['top'] or state['monkey']['bot'] >= state['tree']['bot']:
+            if state['monkey']['top'] + state['monkey']['vel'] >= state['tree']['top'] or state['monkey']['bot'] + state['monkey']['vel'] >= state['tree']['bot']:
                 last_reward = -5
             else:
                 last_reward = 1
@@ -115,20 +115,25 @@ class Learner(object):
         old_state = self.state_RL(old_state).T
         last_state = self.state_RL(state).T
         Qvalues = model.predict(old_state)
-        Q_val = self.last_reward + .999*(np.max(model.predict(last_state)))
+        Q_val = self.last_reward + .9999*(np.max(model.predict(last_state)))
         Qvalues[0][self.last_action] = Q_val
         model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
+        last_step = 0
 
         ## Add SARSA entries ##
-        self.sarsa.append((old_state, self.last_action, last_state, reward))
+        self.sarsa.append((old_state, self.last_action, last_state, reward, last_step))
 
 
     def long_learn(self):
-        size = min(int(len(self.sarsa) / 4), 100)
-        for old_state, action, last_state, reward in random.sample(self.sarsa, size):
+        size = min(int(len(self.sarsa) / 4), 128)
+        for old_state, action, last_state, reward, last_step in random.sample(self.sarsa, size):
             model = self.model
             Qvalues = model.predict(old_state)
-            Q_val = reward + .999*(np.max(model.predict(last_state)))
+            if last_step == 1:
+                # print "hit"
+                Q_val = reward
+            else:
+                Q_val = reward + .9999*(np.max(model.predict(last_state)))
             Qvalues[0][action] = Q_val
             model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
 
@@ -173,7 +178,7 @@ if __name__ == '__main__':
 	hist = []
 
 	# Run games.
-	run_games(agent, hist, 100000, 1)
+	run_games(agent, hist, 5000, 1)
 
 	# Save history.
 	np.save('hist',np.array(hist))
