@@ -2,10 +2,11 @@
 import numpy as np
 import numpy.random as npr
 import pygame as pg
+import copy
+import random
 from keras.models import Sequential
 from keras.layers.core import Flatten, Dense, Dropout
 from keras.layers.convolutional import Conv2D, MaxPooling2D, ZeroPadding2D
-
 from SwingyMonkey import SwingyMonkey
 
 
@@ -18,56 +19,33 @@ class Learner(object):
 
     def __init__(self):
         self.last_state  = None
+        self.two_ago = None
         self.last_action = None
         self.last_reward = None
-        model = Sequential()
-        model.add(InputLayer(batch_input_shape=(1, 4)))
-        model.add(Dense(10, activation='sigmoid'))
-        model.add(Dense(2, activation='linear'))
-        model.compile(loss='mse', optimizer='adam', metrics=['mae'])
-   
+        self.epsilon = .3
+        self.sarsa = []
+        self.counter = 0
+        self.gravity = 0
+        self.model = Sequential()
+        self.model.add(Dense(64, input_dim=5, activation='relu'))
+        self.model.add(Dense(64, activation='relu'))
+        self.model.add(Dense(2, activation='linear'))
+        self.model.compile(loss='mse', optimizer='sgd')
 
-        self.SimpQ = {}
 
     def reset(self):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
-<<<<<<< HEAD
+        if len(self.sarsa) > 500:
+            self.sarsa = self.sarsa[-500:]
 
     def state_RL(self, state):
-        state = self.last_state
-=======
-    
-    def state_RL(self, state):
->>>>>>> 2bd9218050eede937ebec4770fd8fa573169646e
         top_dist = state['tree']['top'] - state['monkey']['top']
         bot_dist = state['tree']['bot'] - state['monkey']['bot']
-        return (top_dist, bot_dist, state['tree']['dist'], state['monkey']['vel'])
+        new_state = np.array([[top_dist], [bot_dist], [state['tree']['dist']], [state['monkey']['vel']], [self.gravity]])
 
-
-    def eps_greedy_q_learning_with_table(env, num_episodes=500):
-        q_table = np.zeros((5, 2))
-        y = 0.95
-        eps = 0.5
-        lr = 0.8
-        decay_factor = 0.999
-        for i in range(num_episodes):
-            s = env.reset()
-            eps *= decay_factor
-            done = False
-            while not done:
-                # select the action with highest cummulative reward
-                if np.random.random() < eps or np.sum(q_table[s, :]) == 0:
-                    a = np.random.randint(0, 2)
-                else:
-                    a = np.argmax(q_table[s, :])
-                # pdb.set_trace()
-                new_s, r, done, _ = env.step(a)
-                q_table[s, a] += r + lr * (y * np.max(q_table[new_s, :]) - q_table[s, a])
-                s = new_s
-        return q_table
-
+        return new_state
 
 
 
@@ -83,39 +61,83 @@ class Learner(object):
         # You'll need to select and action and return it.
         # Return 0 to swing and 1 to jump.
 
-        RL_ state = state_RL(state)
-        
+        new_state = self.state_RL(state)
+        model = self.model
+        count = self.counter
 
-        new_action = npr.rand() < 0.1
-<<<<<<< HEAD
-        new_state  = self.state_RL(state)
+        epsilon = self.epsilon/(1+count*.0001)
+        self.epsilon = epsilon
+        if epsilon > 0:
+            print self.epsilon
 
-=======
+        if np.random.rand() < epsilon:
+            # self.randomCount += 1
+            a = np.random.randint(0,2)
+            # print self.epsilon, self.randomCount
+        else:
+            a = np.argmax(model.predict(new_state.T))
 
-        a = np.argmax(model.predict(self.state_RL))
->>>>>>> 2bd9218050eede937ebec4770fd8fa573169646e
+        if self.last_action == a and a == 0:
+            self.gravity = self.last_state['monkey']['vel'] - state['monkey']['vel']
 
-
-        self.last_action = new_action
-        new_state  = state
-        self.last_state  = new_state
-
+        if self.gravity == 4:
+            self.gravity = 0
+        self.last_action = a
+        self.two_ago = copy.copy(self.last_state)
+        self.last_state  = state
+        self.counter += 1
         return self.last_action
 
     def reward_callback(self, reward):
         last_reward = 0
         state = self.last_state
+        old_state = self.two_ago
 
+        ## Calculate Reward ##
         if state['monkey']['bot'] + state['monkey']['vel'] < 0 or state['monkey']['top'] + state['monkey']['vel'] > 400:
             last_reward = -10
 
-        elif state['tree']['dist'] == 0:
+        elif state['tree']['dist'] <= 270 and state['tree']['dist'] >= 150:
             if state['monkey']['top'] >= state['tree']['top'] or state['monkey']['bot'] >= state['tree']['bot']:
                 last_reward = -5
             else:
                 last_reward = 1
 
         self.last_reward = reward
+
+        if old_state == None:
+            return
+
+
+
+        ## Update NN ##
+        model = self.model
+        old_state = self.state_RL(old_state).T
+        last_state = self.state_RL(state).T
+        Qvalues = model.predict(old_state)
+        Q_val = self.last_reward + .999*(np.max(model.predict(last_state)))
+        Qvalues[0][self.last_action] = Q_val
+        model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
+
+        ## Add SARSA entries ##
+        self.sarsa.append((old_state, self.last_action, last_state, reward))
+
+
+    def long_learn(self):
+<<<<<<< HEAD
+        size = min(int(len(self.sarsa) / 4), 100)
+        for old_state, action, last_state, reward in random.sample(self.sarsa, size):
+=======
+        size = min(int(len(self.sarsa) / 4), 128)
+        for old_state, action, last_state, reward in random.sample(self.sarsa, size): 
+>>>>>>> 5a002ee1b04290ee53bc505198429f8436c236b2
+            model = self.model
+            Qvalues = model.predict(old_state)
+            Q_val = reward + .999*(np.max(model.predict(last_state)))
+            Qvalues[0][action] = Q_val
+            model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
+
+
 
 
 def run_games(learner, hist, iters = 100, t_len = 100):
@@ -138,6 +160,9 @@ def run_games(learner, hist, iters = 100, t_len = 100):
         # Save score history.
         hist.append(swing.score)
 
+        # Long term learning
+        learner.long_learn()
+
         # Reset the state of the learner.
         learner.reset()
     pg.quit()
@@ -153,7 +178,7 @@ if __name__ == '__main__':
 	hist = []
 
 	# Run games.
-	run_games(agent, hist, 20, 10)
+	run_games(agent, hist, 100000, 1)
 
 	# Save history.
 	np.save('hist',np.array(hist))
