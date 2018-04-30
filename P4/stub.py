@@ -23,6 +23,7 @@ class Learner(object):
         self.last_action = None
         self.last_reward = None
         self.epsilon = .5
+        self.sarsa = []
         # self.randomCount = 0
         self.gravity = 0
         self.model = Sequential()
@@ -40,7 +41,7 @@ class Learner(object):
     def state_RL(self, state):
         top_dist = state['tree']['top'] - state['monkey']['top']
         bot_dist = state['tree']['bot'] - state['monkey']['bot']
-        new_state = np.array([[top_dist], [bot_dist], [state['tree']['dist']], [state['monkey']['vel']]], [self.gravity]])
+        new_state = np.array([[top_dist], [bot_dist], [state['tree']['dist']], [state['monkey']['vel']], [self.gravity]])
 
         return new_state
 
@@ -76,7 +77,6 @@ class Learner(object):
 
         if self.gravity == 4:
             self.gravity = 0
-        # print self.gravity
         self.last_action = a
         self.two_ago = copy.copy(self.last_state)
         self.last_state  = state
@@ -101,6 +101,9 @@ class Learner(object):
 
         if old_state == None:
             return
+
+        ## Add SARSA entries ##
+        self.sarsa.append((old_state, self.last_action, state, reward))
 
         ## Update NN ##
         model = self.model
