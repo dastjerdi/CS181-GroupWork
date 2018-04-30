@@ -27,10 +27,10 @@ class Learner(object):
         # self.randomCount = 0
         self.gravity = 0
         self.model = Sequential()
-        self.model.add(Dense(8, input_dim=5, kernel_initializer='normal', activation='relu'))
-        # self.model.add(Dense(10, activation='relu'))
-        self.model.add(Dense(2, activation='sigmoid'))
-        self.model.compile(loss='mse', optimizer='adam', metrics=['mae'])
+        self.model.add(Dense(64, input_dim=5, activation='relu'))
+        self.model.add(Dense(64, activation='relu'))
+        self.model.add(Dense(2, activation='linear'))
+        self.model.compile(loss='mse', optimizer='sgd')
 
 
     def reset(self):
@@ -118,7 +118,7 @@ class Learner(object):
 
 
     def long_learn(self):
-        size = min(int(len(self.sarsa) / 4), 32)
+        size = min(int(len(self.sarsa) / 4), 128)
         for old_state, action, last_state, reward in random.sample(self.sarsa, size): 
             model = self.model
             Qvalues = model.predict(old_state)
