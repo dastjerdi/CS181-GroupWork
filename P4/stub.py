@@ -5,6 +5,7 @@ import pygame as pg
 import copy
 import random
 from keras.models import Sequential
+from keras.optimizers import Adam
 from keras.layers.core import Flatten, Dense, Dropout
 from keras.layers.convolutional import Conv2D, MaxPooling2D, ZeroPadding2D
 from SwingyMonkey import SwingyMonkey
@@ -22,7 +23,7 @@ class Learner(object):
         self.two_ago = None
         self.last_action = None
         self.last_reward = None
-        self.epsilon = .5
+        self.epsilon = .1
         self.sarsa = []
         self.counter = 0
         self.game = 0
@@ -33,24 +34,24 @@ class Learner(object):
         self.model.add(Dense(16, input_dim=7, kernel_initializer='normal', activation='relu'))
         # self.model.add(Dense(10, activation='relu'))
         self.model.add(Dense(2, activation='sigmoid'))
-        self.model.compile(loss='mse', optimizer='adam', metrics=['mae'])
+        adam = Adam(lr=1e-6)
+        self.model.compile(loss='mse', optimizer = adam, metrics=['mae'])
 
 
     def reset(self):
         self.game += 1
-
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
         a,b,c,d,_ = self.sarsa[-1]
         self.sarsa[-1] = (a,b,c,d,1)
-        if len(self.sarsa) > 512:
-            self.sarsa = self.sarsa[-512:]
-        if self.posReward:
-            self.lastPos = self.game
-        elif self.game - self.lastPos > 5 and self.epsilon < .1:
-            self.epsilon = .3
-            self.sarsa = []
+        if len(self.sarsa) > 500000:
+            self.sarsa = self.sarsa[-500000:]
+        # if self.posReward:
+        #     self.lastPos = self.game
+        # elif self.game - self.lastPos > 5 and self.epsilon < .1:
+        #     self.epsilon = .3
+        #     self.sarsa = []
         self.posReward = False
 
 
@@ -81,15 +82,19 @@ class Learner(object):
         count = self.counter
 
 
-        epsilon = self.epsilon/(1+count*.000005)
-        self.epsilon = epsilon
+        if self.game < 300:
+            jump = .1
+            a = int(np.random.rand() < .2)
+        else:
+            epsilon = self.epsilon/(1+count*.0000001)
+            self.epsilon = max(epsilon, .01)
+
         # print(self.epsilon)
 
-        if np.random.rand() < epsilon:
-            # a = np.random.randint(0,2)
-            a = 0
-        else:
-            a = np.argmax(model.predict(new_state.T))
+            if np.random.rand() < epsilon:
+                a = np.random.randint(0,2)
+            else:
+                a = np.argmax(model.predict(new_state.T))
 
         if self.last_action == a and a == 0:
             self.gravity = self.last_state['monkey']['vel'] - state['monkey']['vel']
@@ -103,47 +108,41 @@ class Learner(object):
         return self.last_action
 
     def reward_callback(self, reward):
-        last_reward = 0
+        self.last_reward = reward
         state = self.last_state
         old_state = self.two_ago
 
-        ## Calculate Reward ##
-        if state['monkey']['bot'] + state['monkey']['vel'] < 0 or state['monkey']['top'] + state['monkey']['vel'] > 400:
-            last_reward = -10
-
-        elif state['tree']['dist'] <= 270 and state['tree']['dist'] >= 150:
-            if state['monkey']['top'] + state['monkey']['vel'] >= state['tree']['top'] or state['monkey']['bot'] + state['monkey']['vel'] >= state['tree']['bot']:
-                last_reward = -5
-            else:
-                last_reward = 1
-                # print self.counter, self.lastPos
-                self.posReward = True
-
-        self.last_reward = reward
-
+        if reward > 0:
+            self.posReward = True
         if old_state == None:
             return
 
 
 
         ## Update NN ##
-        model = self.model
+        # model = self.model
         old_state = self.state_RL(old_state).T
         last_state = self.state_RL(state).T
-        Qvalues = model.predict(old_state)
-        Q_val = self.last_reward + .9*(np.max(model.predict(last_state)))
-        Qvalues[0][self.last_action] = Q_val
-        model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
+        # Qvalues = model.predict(old_state)
+        # Q_val = self.last_reward + .99*(np.max(model.predict(last_state)))
+        # Qvalues[0][self.last_action] = Q_val
+        # model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
         last_step = 0
+
 
         ## Add SARSA entries ##
         self.sarsa.append((old_state, self.last_action, last_state, reward, last_step))
 
+        ## Learn Model ##
+        if self.game < 300:
+            return
+        self.long_learn()
+
 
     def long_learn(self):
-        size = min(int(len(self.sarsa) / 4), 128)
-        Q_matrix = np.empty((1,2))
-        Q_states = np.empty((1,7))
+        size = min(len(self.sarsa), 32)
+        # Q_matrix = np.empty((1,2))
+        # Q_states = np.empty((1,7))
         for old_state, action, last_state, reward, last_step in random.sample(self.sarsa, size):
             model = self.model
             Qvalues = model.predict(old_state)
@@ -151,7 +150,7 @@ class Learner(object):
                 # print "hit"
                 Q_val = reward
             else:
-                Q_val = reward + .9*(np.max(model.predict(last_state)))
+                Q_val = reward + .99*(np.max(model.predict(last_state)))
             Qvalues[0][action] = Q_val
             model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
 
@@ -212,4 +211,6 @@ if __name__ == '__main__':
 	run_games(agent, hist, 5000, 1)
 
 	# Save history.
-	np.save('hist',np.array(hist))
+np.save('hist',np.array(hist))
+agent.model.save('NN_Run.h5')
+np.save('SARSA', np.array(agent.sarsa))
