@@ -155,18 +155,18 @@ class Learner(object):
             Qvalues[0][action] = Q_val
             model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
 
-        if self.game % 10 == 0:
-            for old_state, action, last_state, reward, last_step in self.sarsa:
-                Q_states = np.hstack((Q_states, old_state))
-                Qvalues = model.predict(old_state)
-                if last_step == 1:
-                    # print "hit"
-                    Q_val = reward
-                else:
-                    Q_val = reward + .9*(np.max(model.predict(last_state)))
-                Qvalues[0][action] = Q_val
-                Q_matrix = np.hstack((Q_matrix, Qvalues))
-            model.fit(np.array(Q_states), np.array(Q_matrix), epochs=100, verbose = 1)
+        # if self.game % 10 == 0:
+        #     for old_state, action, last_state, reward, last_step in self.sarsa:
+        #         Q_states = np.hstack((Q_states, old_state))
+        #         Qvalues = model.predict(old_state)
+        #         if last_step == 1:
+        #             # print "hit"
+        #             Q_val = reward
+        #         else:
+        #             Q_val = reward + .9*(np.max(model.predict(last_state)))
+        #         Qvalues[0][action] = Q_val
+        #         Q_matrix = np.hstack((Q_matrix, Qvalues))
+        #     model.fit(np.array(Q_states), np.array(Q_matrix), epochs=100, verbose = 1)
 
 
 
