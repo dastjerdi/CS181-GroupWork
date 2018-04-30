@@ -1,12 +1,15 @@
 import sys
 import pygame as pg
 import numpy.random as npr
+import os
 
 
 class SwingyMonkey:
 
     def __init__(self, sound=True, text=None, action_callback=None,
                  reward_callback=None, tick_length=100):
+        os.putenv('SDL_VIDEODRIVER', 'fbcon')
+        os.environ["SDL_VIDEODRIVER"] = "dummy"
         """Constructor for the SwingyMonkey class.
 
         Possible Keyword Arguments:
