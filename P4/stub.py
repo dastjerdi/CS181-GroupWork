@@ -23,9 +23,10 @@ class Learner(object):
         self.last_action = None
         self.last_reward = None
         self.epsilon = .5
-        self.randomCount = 0
+        # self.randomCount = 0
+        self.gravity = 0
         self.model = Sequential()
-        self.model.add(Dense(50, input_dim=4, kernel_initializer='normal', activation='relu'))
+        self.model.add(Dense(8, input_dim=5, kernel_initializer='normal', activation='relu'))
         # self.model.add(Dense(10, activation='relu'))
         self.model.add(Dense(2, activation='sigmoid'))
         self.model.compile(loss='mse', optimizer='adam', metrics=['mae'])
@@ -39,7 +40,7 @@ class Learner(object):
     def state_RL(self, state):
         top_dist = state['tree']['top'] - state['monkey']['top']
         bot_dist = state['tree']['bot'] - state['monkey']['bot']
-        new_state = np.array([[top_dist], [bot_dist], [state['tree']['dist']], [state['monkey']['vel']]])
+        new_state = np.array([[top_dist], [bot_dist], [state['tree']['dist']], [state['monkey']['vel']]], [self.gravity]])
 
         return new_state
 
@@ -60,17 +61,22 @@ class Learner(object):
         new_state = self.state_RL(state)
         model = self.model
 
-        epsilon = self.epsilon*.9
+        epsilon = self.epsilon*.999
         self.epsilon = epsilon
 
         if np.random.rand() < epsilon:
-            self.randomCount += 1
+            # self.randomCount += 1
             a = np.random.randint(0,2)
-            print self.epsilon, self.randomCount
+            # print self.epsilon, self.randomCount
         else:
             a = np.argmax(model.predict(new_state.T))
 
+        if self.last_action == a and a == 0:
+            self.gravity = self.last_state['monkey']['vel'] - state['monkey']['vel']
 
+        if self.gravity == 4:
+            self.gravity = 0
+        # print self.gravity
         self.last_action = a
         self.two_ago = copy.copy(self.last_state)
         self.last_state  = state
@@ -85,7 +91,7 @@ class Learner(object):
         if state['monkey']['bot'] + state['monkey']['vel'] < 0 or state['monkey']['top'] + state['monkey']['vel'] > 400:
             last_reward = -10
 
-        elif state['tree']['dist'] == 0:
+        elif state['tree']['dist'] <= 270 and state['tree']['dist'] >= 150:
             if state['monkey']['top'] >= state['tree']['top'] or state['monkey']['bot'] >= state['tree']['bot']:
                 last_reward = -5
             else:
@@ -103,7 +109,7 @@ class Learner(object):
         Qvalues = model.predict(old_state)
         Q_val = self.last_reward + .95*(np.max(model.predict(last_state)))
         Qvalues[0][self.last_action] = Q_val
-        model.fit(old_state, Qvalues, epochs = 10, verbose = 1)
+        model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
 
 
 def run_games(learner, hist, iters = 100, t_len = 100):
