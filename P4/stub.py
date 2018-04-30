@@ -3,10 +3,10 @@ import numpy as np
 import numpy.random as npr
 import pygame as pg
 import copy
+import random
 from keras.models import Sequential
 from keras.layers.core import Flatten, Dense, Dropout
 from keras.layers.convolutional import Conv2D, MaxPooling2D, ZeroPadding2D
-
 from SwingyMonkey import SwingyMonkey
 
 
@@ -98,12 +98,13 @@ class Learner(object):
                 last_reward = 1
 
         self.last_reward = reward
+        if reward != 0: 
+            print(reward)
 
         if old_state == None:
             return
 
         ## Add SARSA entries ##
-        self.sarsa.append((old_state, self.last_action, state, reward))
 
         ## Update NN ##
         model = self.model
@@ -113,6 +114,19 @@ class Learner(object):
         Q_val = self.last_reward + .95*(np.max(model.predict(last_state)))
         Qvalues[0][self.last_action] = Q_val
         model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
+        self.sarsa.append((old_state, self.last_action, last_state, reward))
+
+
+    def long_learn(self):
+        size = min(int(len(self.sarsa) / 4), 32)
+        for old_state, action, last_state, reward in random.sample(self.sarsa, size): 
+            model = self.model
+            Qvalues = model.predict(old_state)
+            Q_val = reward + .95*(np.max(model.predict(last_state)))
+            Qvalues[0][action] = Q_val
+            model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
+
+
 
 
 def run_games(learner, hist, iters = 100, t_len = 100):
@@ -134,6 +148,9 @@ def run_games(learner, hist, iters = 100, t_len = 100):
 
         # Save score history.
         hist.append(swing.score)
+
+        # Long term learning
+        learner.long_learn()
 
         # Reset the state of the learner.
         learner.reset()
