@@ -22,9 +22,9 @@ class Learner(object):
         self.two_ago = None
         self.last_action = None
         self.last_reward = None
-        self.epsilon = .5
+        self.epsilon = .3
         self.sarsa = []
-        # self.randomCount = 0
+        self.counter = 0
         self.gravity = 0
         self.model = Sequential()
         self.model.add(Dense(8, input_dim=5, kernel_initializer='normal', activation='relu'))
@@ -37,6 +37,8 @@ class Learner(object):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
+        if len(self.sarsa) > 500:
+            self.sarsa = self.sarsa[-500:]
 
     def state_RL(self, state):
         top_dist = state['tree']['top'] - state['monkey']['top']
@@ -61,9 +63,12 @@ class Learner(object):
 
         new_state = self.state_RL(state)
         model = self.model
+        count = self.counter
 
-        epsilon = self.epsilon*.999
+        epsilon = self.epsilon/(1+count*.0001)
         self.epsilon = epsilon
+        if epsilon > 0:
+            print self.epsilon
 
         if np.random.rand() < epsilon:
             # self.randomCount += 1
@@ -80,6 +85,7 @@ class Learner(object):
         self.last_action = a
         self.two_ago = copy.copy(self.last_state)
         self.last_state  = state
+        self.counter += 1
         return self.last_action
 
     def reward_callback(self, reward):
@@ -98,31 +104,31 @@ class Learner(object):
                 last_reward = 1
 
         self.last_reward = reward
-        if reward != 0: 
-            print(reward)
 
         if old_state == None:
             return
 
-        ## Add SARSA entries ##
+
 
         ## Update NN ##
         model = self.model
         old_state = self.state_RL(old_state).T
         last_state = self.state_RL(state).T
         Qvalues = model.predict(old_state)
-        Q_val = self.last_reward + .95*(np.max(model.predict(last_state)))
+        Q_val = self.last_reward + .999*(np.max(model.predict(last_state)))
         Qvalues[0][self.last_action] = Q_val
         model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
+
+        ## Add SARSA entries ##
         self.sarsa.append((old_state, self.last_action, last_state, reward))
 
 
     def long_learn(self):
-        size = min(int(len(self.sarsa) / 4), 32)
-        for old_state, action, last_state, reward in random.sample(self.sarsa, size): 
+        size = min(int(len(self.sarsa) / 4), 100)
+        for old_state, action, last_state, reward in random.sample(self.sarsa, size):
             model = self.model
             Qvalues = model.predict(old_state)
-            Q_val = reward + .95*(np.max(model.predict(last_state)))
+            Q_val = reward + .999*(np.max(model.predict(last_state)))
             Qvalues[0][action] = Q_val
             model.fit(old_state, Qvalues, epochs = 1, verbose = 0)
 
